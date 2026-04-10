@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deal Flow Analyzer</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-2: #0a1628;
+      --panel: rgba(13, 24, 43, 0.86);
+      --panel-2: rgba(18, 31, 55, 0.92);
+      --text: #f5f8ff;
+      --muted: #9fb0c9;
+      --accent: #7eb6ff;
+      --accent-2: #7ef0cf;
+      --accent-3: #d7e7ff;
+      --border: rgba(255,255,255,0.08);
+      --good: #58d692;
+      --good-soft: rgba(88,214,146,0.12);
+      --warn: #f2cc70;
+      --warn-soft: rgba(242,204,112,0.12);
+      --bad: #ee8383;
+      --bad-soft: rgba(238,131,131,0.12);
+      --info: #8db7ff;
+      --info-soft: rgba(141,183,255,0.12);
+      --shadow: 0 24px 60px rgba(0,0,0,0.34);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(33, 76, 143, 0.35), transparent 28%),
+        radial-gradient(circle at top right, rgba(40, 120, 102, 0.16), transparent 24%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 55%, #040a13 100%);
+      color: var(--text);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0));
+    }
+
+    .container {
+      width: min(1220px, calc(100% - 32px));
+      margin: 32px auto 48px;
+    }
+
+    .hero {
+      position: relative;
+      margin-bottom: 24px;
+      padding: 28px 28px 30px;
+      border-radius: 28px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      right: -140px;
+      top: -140px;
+      background: radial-gradient(circle, rgba(126,182,255,0.22), transparent 62%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.03);
+    }
+
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(2.2rem, 4vw, 3.35rem);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      align-items: end;
+    }
+
+    .subtext {
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+      padding: 14px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      color: var(--accent-3);
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 430px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      padding: 18px 20px 8px;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .card-header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card-body {
+      padding: 16px 20px 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    textarea,
+    select,
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 14px 14px;
+      font: inherit;
+      resize: vertical;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    textarea {
+      min-height: 150px;
+      line-height: 1.55;
+    }
+
+    textarea:focus,
+    select:focus,
+    input:focus {
+      outline: none;
+      border-color: rgba(126,182,255,0.52);
+      box-shadow: 0 0 0 3px rgba(126,182,255,0.12);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.14s ease, opacity 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #a6ccff);
+      color: #081122;
+      box-shadow: 0 10px 24px rgba(110,168,254,0.28);
+    }
+
+    .secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .score-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .score-card .score-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .score-card .score-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-3);
+    }
+
+    .result-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 200px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .result-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(126,240,207,0.06), transparent 35%);
+      pointer-events: none;
+    }
+
+    .result-card.full {
+      grid-column: 1 / -1;
+      min-height: 160px;
+    }
+
+    .result-card h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .result-card p,
+    .result-card li {
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .result-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .overview-card h3,
+    .fit-card h3,
+    .questions-card h3,
+    .recommendation-card h3 {
+      color: var(--info);
+    }
+
+    .risk-card {
+      border-color: rgba(238,131,131,0.22);
+      background: linear-gradient(180deg, var(--bad-soft), rgba(255,255,255,0.015));
+    }
+
+    .risk-card h3 {
+      color: var(--bad);
+    }
+
+    .opportunity-card {
+      border-color: rgba(88,214,146,0.22);
+      background: linear-gradient(180deg, var(--good-soft), rgba(255,255,255,0.015));
+    }
+
+    .opportunity-card h3 {
+      color: var(--good);
+    }
+
+    .fit-card {
+      border-color: rgba(242,204,112,0.2);
+      background: linear-gradient(180deg, var(--warn-soft), rgba(255,255,255,0.015));
+    }
+
+    .fit-card h3 {
+      color: var(--warn);
+    }
+
+    .placeholder {
+      color: var(--muted) !important;
+    }
+
+    .score-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .score-high { color: var(--good); }
+    .score-medium { color: var(--warn); }
+    .score-low { color: var(--bad); }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .results,
+      .row,
+      .hero-stats,
+      .score-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <span class="eyebrow">AI & Systems Demo</span>
+      <div class="hero-grid">
+        <div>
+          <h1>Deal Flow Analyzer</h1>
+          <p class="subtext">
+            A lightweight screening tool for inbound investment opportunities. Paste a deal description,
+            define the investment lens, and generate a structured first-pass review covering risks,
+            operational upside, fit with mandate, and next-step diligence questions.
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-label">Primary Use</div>
+            <div class="stat-value">First-pass deal screening</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Workflow Focus</div>
+            <div class="stat-value">Risk flags, fit, and diligence questions</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Current Mode</div>
+            <div class="stat-value">Structured rules with LLM-ready front end</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <div class="card-header">
+          <h2>Inputs</h2>
+          <p>Keep this simple. The goal is a believable first-pass screening workflow, not a full diligence engine or full investment memo.</p>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label for="criteria">Investment Criteria</label>
+            <textarea id="criteria">Evaluate this opportunity for a lower middle market private equity firm that prefers:
+- founder- or family-owned businesses
+- services or essential product sectors
+- recurring, defensible, or sticky revenue characteristics
+- operational improvement potential
+- businesses where systems, reporting, or process improvement can create value</textarea>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="sector">Sector</label>
+              <select id="sector">
+                <option>General</option>
+                <option>Services</option>
+                <option>Essential Products</option>
+                <option>Industrial</option>
+                <option>Healthcare</option>
+                <option>Business Services</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="ownership">Ownership Type</label>
+              <select id="ownership">
+                <option>Unknown</option>
+                <option>Founder-Owned</option>
+                <option>Family-Owned</option>
+                <option>Corporate Divestiture</option>
+                <option>Sponsor-Backed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="geography">Geography</label>
+            <select id="geography">
+              <option>United States</option>
+              <option>Southeast</option>
+              <option>Midwest</option>
+              <option>Northeast</option>
+              <option>Southwest</option>
+              <option>National</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="dealText">Deal Description</label>
+            <textarea id="dealText" placeholder="Paste a CIM excerpt, teaser, or company summary here..."></textarea>
+          </div>
+
+          <div class="button-row">
+            <button class="primary" id="analyzeBtn">Analyze Deal</button>
+            <button class="secondary" id="sampleBtn">Load Sample Deal</button>
+            <button class="secondary" id="clearBtn">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Output</h2>
+          <p>Structured to look like a clean first-pass screening memo rather than a chatbot response.</p>
+        </div>
+        <div class="card-body">
+          <div id="scorePill" class="score-pill placeholder">No analysis yet</div>
+
+          <div class="score-grid">
+            <div class="score-card">
+              <div class="score-label">Revenue Quality</div>
+              <div id="revenueScore" class="score-value placeholder">Not scored</div>
+            </div>
+            <div class="score-card">
+              <div class="score-label">Ownership Fit</div>
+              <div id="ownershipScore" class="score-value placeholder">Not scored</div>
+            </div>
+            <div class="score-card">
+              <div class="score-label">Operational Upside</div>
+              <div id="opsScore" class="score-value placeholder">Not scored</div>
+            </div>
+          </div>
+
+          <div class="results">
+            <div class="result-card overview-card">
+              <h3>Business Overview</h3>
+              <div id="overview" class="placeholder">Paste a deal description and click Analyze Deal.</div>
+            </div>
+
+            <div class="result-card fit-card">
+              <h3>Fit Against Criteria</h3>
+              <div id="fit" class="placeholder">The tool will evaluate alignment with your stated investment lens.</div>
+            </div>
+
+            <div class="result-card risk-card">
+              <h3>Key Risks</h3>
+              <div id="risks" class="placeholder">Major execution, customer, reporting, or sector concerns will appear here.</div>
+            </div>
+
+            <div class="result-card opportunity-card">
+              <h3>Key Opportunities</h3>
+              <div id="opps" class="placeholder">Growth, systems, and operational upside will appear here.</div>
+            </div>
+
+            <div class="result-card full questions-card">
+              <h3>Recommended Next Questions</h3>
+              <div id="questions" class="placeholder">This section will suggest what to ask before spending more diligence time.</div>
+            </div>
+
+            <div class="result-card full recommendation-card">
+              <h3>Preliminary Recommendation</h3>
+              <div id="recommendation" class="placeholder">A concise first-pass recommendation will appear here.</div>
+            </div>
+          </div>
+
+          <p class="footer-note">
+            Current version uses structured rules and keyword-based logic to simulate a practical screening workflow.
+            The front end is intentionally designed so it can later be connected to an LLM API for live deal memo generation,
+            risk extraction, and criteria-based scoring.
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const sampleDeal = `ABC Facility Services is a founder-owned commercial maintenance company serving the Southeast United States. The business provides recurring janitorial, light repair, and specialty facility support services to healthcare, education, and industrial customers. Revenue is approximately $18 million with EBITDA margins in the low teens. Customer retention is strong, but reporting systems are manual and branch-level performance tracking is inconsistent. The owner is exploring a majority recapitalization to support geographic expansion and professionalize operations.`;
+
+    const dealText = document.getElementById("dealText");
+    const criteria = document.getElementById("criteria");
+    const sector = document.getElementById("sector");
+    const ownership = document.getElementById("ownership");
+    const geography = document.getElementById("geography");
+
+    const overview = document.getElementById("overview");
+    const fit = document.getElementById("fit");
+    const risks = document.getElementById("risks");
+    const opps = document.getElementById("opps");
+    const questions = document.getElementById("questions");
+    const recommendation = document.getElementById("recommendation");
+    const scorePill = document.getElementById("scorePill");
+    const revenueScore = document.getElementById("revenueScore");
+    const ownershipScore = document.getElementById("ownershipScore");
+    const opsScore = document.getElementById("opsScore");
+
+    document.getElementById("sampleBtn").addEventListener("click", () => {
+      dealText.value = sampleDeal;
+      sector.value = "Services";
+      ownership.value = "Founder-Owned";
+      geography.value = "Southeast";
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      dealText.value = "";
+      resetOutput();
+    });
+
+    document.getElementById("analyzeBtn").addEventListener("click", analyzeDeal);
+
+    function resetOutput() {
+      scorePill.className = "score-pill placeholder";
+      scorePill.textContent = "No analysis yet";
+      revenueScore.textContent = "Not scored";
+      ownershipScore.textContent = "Not scored";
+      opsScore.textContent = "Not scored";
+      [revenueScore, ownershipScore, opsScore].forEach(el => el.classList.add("placeholder"));
+      overview.innerHTML = "Paste a deal description and click Analyze Deal.";
+      fit.innerHTML = "The tool will evaluate alignment with your stated investment lens.";
+      risks.innerHTML = "Major execution, customer, reporting, or sector concerns will appear here.";
+      opps.innerHTML = "Growth, systems, and operational upside will appear here.";
+      questions.innerHTML = "This section will suggest what to ask before spending more diligence time.";
+      recommendation.innerHTML = "A concise first-pass recommendation will appear here.";
+      [overview, fit, risks, opps, questions, recommendation].forEach(el => el.classList.add("placeholder"));
+    }
+
+    function analyzeDeal() {
+      const text = dealText.value.trim();
+      if (!text) {
+        alert("Please paste a deal description first.");
+        return;
+      }
+
+      const lower = text.toLowerCase();
+      let score = 0;
+      const riskItems = [];
+      const oppItems = [];
+      const questionItems = [];
+      const fitNotes = [];
+
+      const hasRecurring = containsAny(lower, ["recurring", "subscription", "contracted", "retention", "sticky"]);
+      const hasFounder = containsAny(lower, ["founder-owned", "founder owned", "family-owned", "family owned"])
+        || ownership.value === "Founder-Owned" || ownership.value === "Family-Owned";
+      const hasServices = containsAny(lower, ["services", "maintenance", "facility", "outsourced", "business services"])
+        || sector.value === "Services" || sector.value === "Business Services";
+      const hasProcessImprovement = containsAny(lower, ["manual", "inconsistent", "systems", "reporting", "professionalize", "operational improvement"]);
+      const hasGrowth = containsAny(lower, ["expansion", "growth", "scale", "rollout", "new market"]);
+      const hasMarginPressure = containsAny(lower, ["low margin", "margin pressure", "commodity", "cyclical"]);
+      const hasConcentration = containsAny(lower, ["customer concentration", "single customer", "concentrated"]);
+      const hasLeverageConcern = containsAny(lower, ["debt", "leveraged", "refinancing", "liquidity"]);
+      const hasKeyPersonRisk = containsAny(lower, ["owner-led", "key man", "founder dependent", "relationship-driven"]);
+      const hasHealthcareOrIndustrial = containsAny(lower, ["healthcare", "industrial", "education"]);
+
+      if (hasRecurring) {
+        score += 2;
+        oppItems.push("Recurring or sticky revenue characteristics may improve durability and predictability.");
+        fitNotes.push("Revenue profile appears more defensible than a pure one-time project model.");
+      } else {
+        riskItems.push("Revenue visibility is unclear, so repeatability, downside resilience, and quality of earnings need validation.");
+        questionItems.push("What percentage of revenue is recurring, contracted, or repeat business?");
+      }
+
+      if (hasFounder) {
+        score += 2;
+        oppItems.push("Ownership profile appears aligned with founder- or family-owned sourcing criteria.");
+        fitNotes.push("Ownership structure appears directionally aligned with a partnership-oriented lower middle market approach.");
+      }
+
+      if (hasServices) {
+        score += 2;
+        oppItems.push("Business appears to operate in a services-oriented category that may fit the target sector focus.");
+        fitNotes.push("Sector appears relevant to a services or essential operations lens.");
+      }
+
+      if (hasProcessImprovement) {
+        score += 2;
+        oppItems.push("Manual reporting or underdeveloped systems suggest a realistic operational improvement angle.");
+        questionItems.push("Which workflows are still manual, and what reporting or KPI gaps would need to be addressed in the first 100 days?");
+      }
+
+      if (hasGrowth) {
+        score += 1;
+        oppItems.push("Expansion language suggests multiple paths to value creation beyond cost takeout alone.");
+      }
+
+      if (hasMarginPressure) {
+        score -= 2;
+        riskItems.push("Margin quality may be vulnerable if the business competes on price or operates in a more commoditized niche.");
+        questionItems.push("How stable have EBITDA margins been over the last 3 years, and what drives compression risk?");
+      }
+
+      if (hasConcentration) {
+        score -= 2;
+        riskItems.push("Customer concentration could materially increase downside risk if one account is lost, repriced, or delayed.");
+        questionItems.push("What is the revenue and gross profit contribution of the top 5 customers?");
+      }
+
+      if (hasLeverageConcern) {
+        score -= 2;
+        riskItems.push("Balance sheet or refinancing language suggests potential capital structure pressure.");
+        questionItems.push("What is the current leverage profile, debt maturity schedule, and near-term liquidity position?");
+      }
+
+      if (hasKeyPersonRisk) {
+        score -= 1;
+        riskItems.push("Founder dependence may create transition risk if relationships or decisions are overly centralized.");
+        questionItems.push("How transferable are customer relationships and operational knowledge beyond the owner?");
+      }
+
+      if (hasHealthcareOrIndustrial) {
+        score += 1;
+        oppItems.push("End-market exposure may support resilience if demand comes from essential or operationally critical customers.");
+      }
+
+      if (geography.value !== "United States") {
+        fitNotes.push(`Geographic emphasis appears concentrated in ${geography.value}, which may be helpful if expansion white space exists.`);
+      } else {
+        fitNotes.push("Geographic footprint appears broad enough to support a scalable operating thesis, assuming density is real.");
+      }
+
+      if (riskItems.length === 0) {
+        riskItems.push("No major red flags are explicit in the summary, but key commercial, customer, and diligence risks remain underwritten only at a surface level.");
+      }
+
+      if (oppItems.length === 0) {
+        oppItems.push("Initial upside appears to come from better reporting, process discipline, and management visibility rather than only financial engineering.");
+      }
+
+      if (questionItems.length < 3) {
+        questionItems.push("What does customer retention look like by cohort and by end market?");
+        questionItems.push("Which KPIs are tracked weekly, and which decisions are still made without reliable data?");
+        questionItems.push("What is the clearest 12-month post-close value creation plan, and who would own each workstream?");
+      }
+
+      const rec = getRecommendation(score);
+      const revenueRating = getRevenueRating(hasRecurring, hasConcentration);
+      const ownershipRating = getOwnershipRating(hasFounder, ownership.value);
+      const opsRating = getOpsRating(hasProcessImprovement, hasGrowth);
+      const overviewText = buildOverview(text);
+      const fitText = buildFitText(fitNotes, criteria.value, rec.label);
+      const recText = buildRecommendation(rec.label, score, hasProcessImprovement, hasRecurring, hasFounder);
+
+      overview.innerHTML = `<p>${overviewText}</p>`;
+      fit.innerHTML = `<p>${fitText}</p>`;
+      risks.innerHTML = toList(riskItems.slice(0, 4));
+      opps.innerHTML = toList(oppItems.slice(0, 4));
+      questions.innerHTML = toList(uniqueItems(questionItems).slice(0, 5));
+      recommendation.innerHTML = `<p>${recText}</p>`;
+
+      [overview, fit, risks, opps, questions, recommendation].forEach(el => el.classList.remove("placeholder"));
+      scorePill.className = `score-pill ${rec.className}`;
+      scorePill.textContent = `Preliminary Fit: ${rec.label}`;
+      revenueScore.textContent = revenueRating;
+      ownershipScore.textContent = ownershipRating;
+      opsScore.textContent = opsRating;
+      [revenueScore, ownershipScore, opsScore].forEach(el => el.classList.remove("placeholder"));
+    }
+
+    function containsAny(text, words) {
+      return words.some(word => text.includes(word));
+    }
+
+    function toList(items) {
+      return `<ul>${items.map(item => `<li>${item}</li>`).join("")}</ul>`;
+    }
+
+    function uniqueItems(items) {
+      return [...new Set(items)];
+    }
+
+    function getRecommendation(score) {
+      if (score >= 6) return { label: "High Fit", className: "score-high" };
+      if (score >= 3) return { label: "Medium Fit", className: "score-medium" };
+      return { label: "Low Fit", className: "score-low" };
+    }
+
+    function getRevenueRating(hasRecurring, hasConcentration) {
+      if (hasRecurring && !hasConcentration) return "Strong";
+      if (hasRecurring || !hasConcentration) return "Moderate";
+      return "Needs Work";
+    }
+
+    function getOwnershipRating(hasFounder, selectedOwnership) {
+      if (hasFounder) return "Strong";
+      if (selectedOwnership === "Unknown") return "Unclear";
+      return "Moderate";
+    }
+
+    function getOpsRating(hasProcessImprovement, hasGrowth) {
+      if (hasProcessImprovement && hasGrowth) return "High";
+      if (hasProcessImprovement || hasGrowth) return "Moderate";
+      return "Limited";
+    }
+
+    function buildOverview(text) {
+      const firstSentence = text.split(/(?<=[.!?])\s+/)[0]?.trim();
+      if (firstSentence && firstSentence.length > 40) {
+        return `${firstSentence} This initial screen suggests the opportunity may be most relevant if the firm is looking for businesses where operational discipline, reporting, and scalable processes could unlock value.`;
+      }
+      return "The business appears to be an initial lower middle market opportunity that should be assessed based on revenue quality, ownership context, and the availability of practical operational levers.";
+    }
+
+    function buildFitText(notes, criteriaText, label) {
+      const firstLine = criteriaText.split("\n").filter(Boolean)[0] || "the stated investment criteria";
+      return `Against ${firstLine.toLowerCase()}, the opportunity currently screens as ${label.toLowerCase()}. ${notes.slice(0, 2).join(" ")}`;
+    }
+
+    function buildRecommendation(label, score, processImprovement, recurring, founder) {
+      let why = [];
+      if (processImprovement) why.push("there is visible room for systems or reporting improvement");
+      if (recurring) why.push("the revenue profile appears at least somewhat durable");
+      if (founder) why.push("the ownership profile appears aligned with founder-led sourcing");
+      if (why.length === 0) why.push("the opportunity needs sharper diligence before it merits deeper time investment");
+
+      return `${label}. The current screen produced a score of ${score}, which suggests the business is ${label === "High Fit" ? "directionally aligned with the stated investment lens" : label === "Medium Fit" ? "interesting but still mixed on a first pass" : "not yet clearly aligned with the target profile"}. At this stage, the main reason is that ${why.join(", and ")}. The next decision should depend on whether follow-up diligence confirms revenue quality, customer resilience, and the practicality of the operating improvement plan.`;
+    }
+  </script>
+</body>
+</html>
