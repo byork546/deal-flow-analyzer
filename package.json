@@ -1,0 +1,6 @@
+{
+  "name": "deal-flow-analyzer",
+  "version": "1.0.0",
+  "description": "First-pass deal screening workflow with LLM-assisted memo generation.",
+  "private": true
+}
