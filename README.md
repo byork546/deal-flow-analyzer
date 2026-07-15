@@ -1,2 +1,5 @@
 # deal-flow-analyzer
-AI-powered deal screening tool for private equity workflows
+A first-pass deal screening tool for private equity workflows. You paste in a company description (a CIM excerpt, teaser, or summary), set an investment thesis and a few deal parameters, and the tool produces a structured screening memo: business overview, fit against criteria, key risks, opportunities, and diligence questions to ask next.
+The tool runs two layers side by side. A deterministic, rule-based score gives an instant fit signal using keyword and criteria matching. Underneath it, an LLM (Claude, via the Anthropic API) reads the actual deal text and generates the qualitative memo, the kind of first-pass read a junior analyst typically does by hand.
+The scope is intentional: the tool extracts and organizes what's in the text and flags what still needs validation. It doesn't estimate valuation, predict returns, or make an invest/pass call, that's not something an LLM can do responsibly without real deal outcome data, so I didn't pretend otherwise.
+Built with a Node/Vercel serverless backend so the API key never touches the browser, and a vanilla JS frontend with no framework overhead.
